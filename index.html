@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D printing service</title>
+  <title>3D Printing Service</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background-color: black; /* Black background */
-      color: white; /* White text */
+      background-color: black;
+      color: white;
     }
     .container {
       display: flex;
@@ -24,16 +24,15 @@
       padding: 20px;
       border: 1px solid #ccc;
       border-radius: 5px;
-      background-color: white; /* White container */
-      color: black; /* Black text inside the container */
+      background-color: white;
+      color: black;
     }
     .video-container {
       flex: 1;
     }
     iframe {
-      width: 150%;
-      max-width: 2000px; /* Enlarged video */
-      height: =2000px; /* Larger height */
+      width: 100%;
+      height: 315px;
       border: none;
     }
     .filament-description {
@@ -62,13 +61,13 @@
       font-size: 16px;
     }
     input, select {
-      background-color: #f9f9f9; /* Light gray input fields */
-      color: black; /* Black text in inputs */
+      background-color: #f9f9f9;
+      color: black;
       border: 1px solid #ccc;
       border-radius: 3px;
     }
     button {
-      background-color: #4CAF50; /* Green button */
+      background-color: #4CAF50;
       color: white;
       border: none;
       border-radius: 3px;
@@ -78,7 +77,12 @@
       background-color: #45a049;
     }
     h3 {
-      color: black; /* Result text matches container styling */
+      color: black;
+    }
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -87,7 +91,7 @@
     <!-- Video Section -->
     <div class="video-container">
       <iframe 
-        src="https://www.youtube.com/embed/4InFd5DoZa4" 
+        src="https://www.youtube.com/embed/42GNlstzt9Y" 
         title="YouTube video player" 
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
         allowfullscreen>
@@ -101,29 +105,29 @@
     <div class="form-container">
       <div class="header">
         <img src="logo.png" alt="Logo">
-        <h1>3D printing service</h1>
+        <h1>3D Printing Service</h1>
       </div>
 
       <label for="filament">Select Filament Type:</label>
       <select id="filament" onchange="updateFilamentDescription()">
-        <option value="PETG">PETG</option>
         <option value="PLA">PLA</option>
+        <option value="PETG">PETG</option>
         <option value="ABS">ABS</option>
-        <option value="PETG-CF" disabled>PETG CF (เร็วๆนี้)</option>
+        <option value="PETG-CF">PETG CF</option>
       </select>
 
-      <label for="weight">Material Weight (grams กรัม):</label>
-      <input type="number" id="weight" placeholder="Enter weight in grams">
+      <label for="weight">Material Weight (กรัม):</label>
+      <input type="number" id="weight" placeholder="เช่น 150">
 
-      <label for="hours">Printing Time (Hours ชั่วโมง):</label>
-      <input type="number" id="hours" placeholder="Enter hours">
+      <label for="hours">Printing Time (ชั่วโมง):</label>
+      <input type="number" id="hours" placeholder="ชั่วโมง เช่น 2">
 
-      <label for="minutes">Printing Time (Minutes นาที):</label>
-      <input type="number" id="minutes" placeholder="Enter minutes">
+      <label for="minutes">Printing Time (นาที):</label>
+      <input type="number" id="minutes" placeholder="นาที เช่น 30">
 
       <button onclick="calculatePrice()">Calculate Price</button>
 
-      <h3>Total Price: <span id="price">0</span> THB</h3>
+      <h3>Total Price: <span id="price">0</span></h3>
 
       <!-- Copy Quotation Button -->
       <button id="copyButton" onclick="copyQuotation()" style="background-color: #2196F3;">Copy Quotation</button>
@@ -134,45 +138,48 @@
     let calculatedInfo = "";
 
     function calculatePrice() {
-      const filamentRate = {
-        PETG: 2.6,
-        PLA: 2.2,
-        ABS: 3.2,
-        "PETG-CF": 3
+      const filamentRates = {
+        PLA: { rate: 2.0, baseFee: 150 },
+        PETG: { rate: 2.4, baseFee: 160 },
+        ABS: { rate: 3.0, baseFee: 180 },
+        "PETG-CF": { rate: 2.8, baseFee: 175 }
       };
+
       const selectedFilament = document.getElementById("filament").value;
       const weight = parseFloat(document.getElementById("weight").value) || 0;
       const hours = parseFloat(document.getElementById("hours").value) || 0;
       const minutes = parseFloat(document.getElementById("minutes").value) || 0;
+      const totalMinutes = hours * 60 + minutes;
 
-      // Convert minutes to fractional hours
-      const totalHours = hours + (minutes / 60);
+      if (weight <= 0 || totalMinutes <= 0) {
+        alert("Please enter valid weight and time.");
+        return;
+      }
 
-      const ratePerHour = 10; // Price per hour in THB
-      const baseFee = 200; // Base service fee in THB
-      const filamentRatePerGram = filamentRate[selectedFilament] || 0;
+      const materialCost = weight * filamentRates[selectedFilament].rate;
+      const printCost = (totalMinutes / 60) * 10;
+      let baseFee = filamentRates[selectedFilament].baseFee;
 
-      // Calculate costs
-      const materialCost = weight * filamentRatePerGram;
-      const printingCost = totalHours * ratePerHour;
-      const calculatedPrice = materialCost + printingCost;
+      if (materialCost + printCost > 600) {
+        const excess = materialCost + printCost - 600;
+        const reduction = Math.min((excess / 400) * baseFee, baseFee);
+        baseFee -= reduction;
+      }
 
-      // Apply base fee only if the calculated price is <= 200 THB
-      const totalPrice = calculatedPrice > 200 ? calculatedPrice : calculatedPrice + baseFee;
+      const totalPrice = materialCost + printCost + baseFee;
+      const roundedPrice = Math.ceil(totalPrice);
 
-      // Update price on page
-      document.getElementById("price").textContent = totalPrice.toFixed(2);
+      document.getElementById("price").textContent = roundedPrice.toLocaleString("en-TH", { style: "currency", currency: "THB" });
 
-      // Store the calculated info for copying
-      calculatedInfo = `Filament: ${selectedFilament}\nWeight: ${weight}g\nTime: ${hours}h ${minutes}m\nTotal Price: ${totalPrice.toFixed(2)} THB`;
+      calculatedInfo = `Filament: ${selectedFilament}\nWeight: ${weight}g\nTime: ${hours}h ${minutes}m\nTotal Price: ${roundedPrice} THB`;
     }
 
     function updateFilamentDescription() {
       const descriptions = {
+        PLA: "PLA (Polylactic Acid) <br> มีจุดเสียรูปที่ความร้อนประมาณ 65°C เป็นวัสดุที่ใช้งานง่าย เหมาะสำหรับการพิมพ์ชิ้นงานทั่วไปและโมเดลตกแต่ง",
         PETG: "PETG (Polyethylene Terephthalate Glycol) <br> มีจุดเสียรูปที่ความร้อนประมาณ 80°C เหมาะสำหรับชิ้นส่วนที่ต้องการความแข็งแรง ทนต่อการใช้งานกลางแจ้ง และทนต่อสารเคมี",
-        PLA: "PLA (Polylactic Acid)<br> มีจุดเสียรูปที่ความร้อนประมาณ 65°C เป็นวัสดุที่ใช้งานง่าย เหมาะสำหรับการพิมพ์ชิ้นงานทั่วไปและโมเดลตกแต่ง",
-        ABS: "ABS (Acrylonitrile Butadiene Styrene)<br> มีจุดเสียรูปที่ความร้อนประมาณ 90°C เหมาะสำหรับงานที่ต้องการความแข็งแรงสูงและทนต่อความร้อน",
-        "PETG-CF": "PETG CF ยังไม่พร้อมใช้งานในขณะนี้"
+        ABS: "ABS (Acrylonitrile Butadiene Styrene) <br> มีจุดเสียรูปที่ความร้อนประมาณ 90°C เหมาะสำหรับงานที่ต้องการความแข็งแรงสูงและทนต่อความร้อน",
+        "PETG-CF": "PETG CF (Carbon Fiber Reinforced) is designed for higher strength, durability, and rigidity, ideal for functional prototypes and high-performance parts."
       };
 
       const selectedFilament = document.getElementById("filament").value;
@@ -182,17 +189,12 @@
 
     function copyQuotation() {
       if (calculatedInfo) {
-        const textArea = document.createElement("textarea");
-        textArea.value = calculatedInfo;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textArea);
-        alert("Quotation copied to clipboard!");
+        navigator.clipboard.writeText(calculatedInfo).then(() => {
+          alert("Quotation copied to clipboard!");
+        });
       }
     }
 
-    // Call the function to set default filament description as PETG when the page loads
     window.onload = function() {
       updateFilamentDescription();
     };
